@@ -1,16 +1,34 @@
 <script>
     import {appState, node, supply} from "$lib/store.js";
-    import {Moon} from "svelte-loading-spinners";
     import {goto} from "$app/navigation";
     import {fade} from 'svelte/transition'
-
-    const startNode = () => {
-        window.api.startNode()
-    }
 
     const stopNode = () => {
         window.api.stopNode()
         $appState.nodeRunning = false
+        node.set({
+            alt_blocks_count: null,
+            difficulty: null,
+            grey_peerlist_size: null,
+            hashrate: null,
+            height: null,
+            incoming_connections_count: null,
+            last_known_block_index: null,
+            major_version: null,
+            minor_version: null,
+            network_height: null,
+            outgoing_connections_count: null,
+            start_time: null,
+            status: null,
+            supported_height: null,
+            synced: null,
+            testnet: null,
+            tx_count: null,
+            tx_pool_size: null,
+            upgrade_heights: null,
+            version: null,
+            white_peerlist_size: null,
+        })
         goto('/')
     }
 
