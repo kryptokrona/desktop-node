@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Navbar from "../components/Navbar.svelte";
+	import TrafficLights from "../components/TrafficLights.svelte";
 
 	let ready: boolean = false;
 	onMount(() => (ready = true));
@@ -9,6 +10,7 @@
 <div class="dragbar"></div>
 
 {#if ready}
+	<TrafficLights />
 	<Navbar />
 	<slot />
 {/if}
