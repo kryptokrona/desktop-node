@@ -97,19 +97,6 @@
 
 <style lang="scss">
 
-  .syncing {
-    position: absolute;
-    top: 0;
-    background-color: #121212;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    height: 100vh;
-    width: 100%;
-    z-index: 110;
-  }
-
   .wrapper {
     padding: 0 30px;
   }
@@ -133,7 +120,7 @@
     margin: 8px 0;
     opacity: 50%;
     font-family: Montserrat;
-    color: white;
+    color: var(--text-color);
     font-size: 1rem;
   }
 
@@ -143,9 +130,9 @@
     align-items: center;
     height: 48px;
     color: white;
-    background-color: #171717;
+    background-color: var(--card-background-color);
     border-radius: 5px;
-    border: 1px solid #252525;
+    border: 1px solid var(--card-border-color);
     position: relative;
     z-index: 1;
 
@@ -153,12 +140,12 @@
       position: absolute;
       align-self: center;
       z-index: 3;
-      color: white;
+      color: var(--title-color);
     }
   }
 
   .sync-bar {
-    background-color: #252525;
+    background-color: var(--card-border-color);
     margin-right: auto;
     height: 100%;
     border-radius: 5px 0 0 5px;
@@ -173,13 +160,14 @@
     border-radius: 5px;
     border: none;
     font-family: Montserrat, sans-serif;
-    grid-column: span 4 / span 4;
+    grid-row: span 2 / span 2;
     grid-column-start: 5;
     cursor: pointer;
+    margin-top: 3rem;
 
     h3 {
       margin: 0;
-      color: white;
+      color: var(--title-color);
     }
   }
 
