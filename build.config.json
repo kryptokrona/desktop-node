@@ -1,0 +1,19 @@
+{
+	"appId": "xkrnode",
+	"productName": "xkrnode",
+	"npmRebuild": false,
+	"directories": {
+		"output": "dist"
+	},
+	"files": [
+		"src/electron.cjs",
+		"src/preload.cjs",
+		{
+			"from": "build",
+			"to": ""
+		}
+	],
+	"extraResources": [
+		"bin/kryptokrona"
+	]
+}
