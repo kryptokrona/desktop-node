@@ -10,7 +10,7 @@
 		"dev:all": "concurrently -n=svelte,electron -c='#ff3e00',blue \"npm run dev:svelte\" \"npm run dev:electron\"",
 		"dev:svelte": "vite dev",
 		"dev:electron": "electron src/electron.cjs",
-		"build": "cross-env NODE_ENV=production vite build && electron-builder --mac --arm64 --config build.config.json",
+		"build": "cross-env NODE_ENV=production vite build && electron-builder --config build.config.json",
 		"build:svelte": "vite build",
 		"build:electron": "electron-builder -mwl --config build.config.json",
 		"prepare": "svelte-kit sync"

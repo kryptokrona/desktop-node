@@ -5,6 +5,15 @@
 	"directories": {
 		"output": "dist"
 	},
+	"mac": {
+		"target": {
+			"target": "default",
+			"arch": [
+				"x64",
+				"arm64"
+			]
+		}
+	},
 	"files": [
 		"src/electron.cjs",
 		"src/preload.cjs",
