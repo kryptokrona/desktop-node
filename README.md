@@ -23,6 +23,7 @@
 
 ## A simple UI for running a node
 
+<img width="612" alt="image" src="https://user-images.githubusercontent.com/36674091/185747988-7dd0c6e7-77f6-479e-a9fa-ee73a294ae33.png">
 
 # Technologies
 
