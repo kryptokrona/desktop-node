@@ -10,7 +10,7 @@
     }
 
     $: {
-        if($appState.nodeRunning === true && $node.network_height > 1000000){
+        if($appState.nodeRunning) {
             goto('/dashboard')
         }
     }

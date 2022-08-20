@@ -154,6 +154,10 @@ ipcMain.on('stopNode', () => {
     stopNode()
 })
 
+ipcMain.on('restartNode', () => {
+    restartNode()
+})
+
 const startNode = () => {
     if(running === false) {
         kryptokrona = spawn(appBin + 'kryptokrona --enable-cors=* --enable-blockexplorer --rpc-bind-ip=0.0.0.0 --rpc-bind-port=11898', {
@@ -161,16 +165,24 @@ const startNode = () => {
             detached: true
         })
     }
-    console.log('Starting kryptokrona')
+    console.log('Starting node')
     running = true
 }
 
 const stopNode = () => {
-    console.log('Stopping kryptokrona')
+    console.log('Stopping node')
     if(running === true) {
-        process.kill(-kryptokrona.pid)
+        process.kill(-kryptokrona.pid, 'SIGINT')
         running = false
     }
+}
+
+const restartNode = () => {
+    console.log('Restarting node');
+    stopNode()
+    setTimeout(() => {
+        startNode()
+    }, 15000)
 }
 
 
