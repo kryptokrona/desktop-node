@@ -51,19 +51,23 @@
             </div>
         </div>
         <div class="col">
-            <p>Height</p>
+            <p>Connected to</p>
+            <div class="card">
+                <h3>{$node.outgoing_connections_count} Nodes</h3>
+            </div>
+        </div>
+        <div class="col">
+            <p>Your height</p>
             <div class="card">
                 <h3>{$node.height}</h3>
             </div>
         </div>
-        {#if $node.synced === false}
-            <div class="row">
-                <p>Supply</p>
-                <div class="card">
-                    <h3>{$supply.current} XKR</h3>
-                </div>
+        <div class="col">
+            <p>Network height</p>
+            <div class="card">
+                <h3>{$node.network_height}</h3>
             </div>
-        {/if}
+        </div>
         <div class="col">
             <p>Hashrate</p>
             <div class="card">
@@ -76,18 +80,14 @@
                 <h3>{($node.difficulty / 1000000).toFixed()} M</h3>
             </div>
         </div>
-        <div class="col">
-            <p>Out</p>
-            <div class="card">
-                <h3>{$node.outgoing_connections_count}</h3>
+        {#if $node.synced === false}
+            <div class="row">
+                <p>Supply</p>
+                <div class="card">
+                    <h3>{$supply.current} XKR</h3>
+                </div>
             </div>
-        </div>
-        <div class="col">
-            <p>In</p>
-            <div class="card">
-                <h3>{$node.incoming_connections_count}</h3>
-            </div>
-        </div>
+        {/if}
         <button class="red" on:click={stopNode}>
             <h3>Stop</h3>
         </button>
