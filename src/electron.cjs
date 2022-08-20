@@ -1,6 +1,6 @@
 const windowStateManager = require('electron-window-state');
 const contextMenu = require('electron-context-menu');
-const {app, BrowserWindow, ipcMain} = require('electron');
+const {app, BrowserWindow, ipcMain, Tray, Menu} = require('electron');
 const serve = require('electron-serve');
 const path = require('path');
 const spawn = require('child_process').spawn;
@@ -27,20 +27,16 @@ function createWindow() {
 
     const mainWindow = new BrowserWindow({
         backgroundColor: '#121212',
-        titleBarStyle: 'hidden',
+        frame: false,
         autoHideMenuBar: true,
-        trafficLightPosition: {
-            x: 15,
-            y: 10,
-        },
         minHeight: 600,
         minWidth: 500,
         maxHeight: 600,
         maxWidth: 500,
         webPreferences: {
-            enableRemoteModule: true,
+            enableRemoteModule: false,
             contextIsolation: true,
-            nodeIntegration: true,
+            nodeIntegration: false,
             spellcheck: false,
             devTools: dev,
             preload: path.join(__dirname, "preload.cjs")
@@ -59,8 +55,7 @@ function createWindow() {
     });
 
     mainWindow.on('close', () => {
-        windowState.saveState(mainWindow);
-        stopNode()
+        mainWindow.hide()
     });
 
     return mainWindow;
@@ -88,24 +83,61 @@ function loadVite(port) {
 
 function createMainWindow() {
     mainWindow = createWindow();
-    mainWindow.once('close', () => {
-        mainWindow = null
-    });
-
     if (dev) loadVite(port);
     else serveURL(mainWindow);
 }
 
 app.once('ready', createMainWindow);
+
+let tray
+app.whenReady().then(() => {
+    console.log(appBin);
+    tray = new Tray(appBin + 'tray@2x.png')
+    const contextMenu = Menu.buildFromTemplate([
+        {
+            label: 'Show', click: function () {
+                mainWindow.show()
+                app.dock.show()
+            }
+        },
+        {
+            label: 'Hide', click: function () {
+                mainWindow.hide()
+                app.dock.hide()
+            }
+        },
+        {
+            label: 'Quit', click: function () {
+                stopNode()
+                app.quit()
+            }
+        },
+    ])
+    tray.setToolTip('This is my application.')
+    tray.setContextMenu(contextMenu)
+    tray.setIgnoreDoubleClickEvents(true)
+})
+
 app.on('activate', () => {
     if (!mainWindow) {
         createMainWindow();
     }
 });
+
 app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit();
-    stopNode()
+    if (process.platform !== 'darwin'){
+        mainWindow.hide()
+    }
 });
+
+ipcMain.on('hide', () => {
+    app.dock.hide()
+    mainWindow.hide()
+})
+
+ipcMain.on('min', () => {
+    mainWindow.minimize()
+})
 
 ipcMain.on('to-main', (event, count) => {
     return mainWindow.webContents.send('from-main', `next count is ${count + 1}`);
@@ -113,7 +145,16 @@ ipcMain.on('to-main', (event, count) => {
 
 let kryptokrona
 let running = false
+
 ipcMain.on('startNode', () => {
+    startNode()
+})
+
+ipcMain.on('stopNode', () => {
+    stopNode()
+})
+
+const startNode = () => {
     if(running === false) {
         kryptokrona = spawn(appBin + 'kryptokrona --enable-cors=* --enable-blockexplorer --rpc-bind-ip=0.0.0.0 --rpc-bind-port=11898', {
             shell: true,
@@ -122,11 +163,7 @@ ipcMain.on('startNode', () => {
     }
     console.log('Starting kryptokrona')
     running = true
-})
-
-ipcMain.on('stopNode', () => {
-    stopNode()
-})
+}
 
 const stopNode = () => {
     console.log('Stopping kryptokrona')
