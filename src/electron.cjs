@@ -101,7 +101,6 @@ app.on('activate', () => {
     if (!mainWindow) {
         createMainWindow();
     }
-    console.log('me')
 });
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
