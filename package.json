@@ -2,7 +2,7 @@
 	"name": "xkrnode",
 	"version": "0.0.1",
 	"private": true,
-	"description": "Minimal Sveltekit + Electron starter template.",
+	"description": "node gui for kryptokrona",
 	"main": "src/electron.cjs",
 	"type": "module",
 	"scripts": {
