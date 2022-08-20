@@ -41,7 +41,7 @@
     flex-direction: column;
 
     h1 {
-      color: white;
+      color: var(--title-color);
     }
   }
 
@@ -59,7 +59,7 @@
     cursor: pointer;
 
     h3 {
-      color: white;
+      color: var(--title-color);
       margin: 0;
     }
   }
