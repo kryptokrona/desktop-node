@@ -5,6 +5,7 @@
 
   const stopNode = () => {
     window.api.stopNode();
+    goto("/");
     $appState.nodeRunning = false;
     node.set({
       alt_blocks_count: null,
@@ -29,7 +30,6 @@
       version: null,
       white_peerlist_size: null
     });
-    goto("/");
   };
 
   let syncPercentage;
