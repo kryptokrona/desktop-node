@@ -16,11 +16,12 @@ contextBridge.exposeInMainWorld(
     startNode: () => {
       ipcRenderer.send("startNode");
     },
+    // 2026-10-05: expose completion promises for node lifecycle commands.
     stopNode: () => {
-      ipcRenderer.send("stopNode");
+      return ipcRenderer.invoke("stopNode");
     },
     restartNode: () => {
-      ipcRenderer.send("restartNode");
+      return ipcRenderer.invoke("restartNode");
     }
   }
 );

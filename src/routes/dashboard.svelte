@@ -1,23 +1,45 @@
 <script>
-  import { appState, node, resetStore, supply } from "$lib/store.js";
+  import { appState, node, resetStore, supply, syncRemainingMinutes } from "$lib/store.js";
   import { goto } from "$app/navigation";
   import { fade } from "svelte/transition";
   import { Moon } from "svelte-loading-spinners";
 
-  const stopNode = () => {
-    window.api.stopNode();
-    goto("/");
-    $appState.nodeRunning = false;
-    resetStore()
+  // 2026-10-05: keep lifecycle controls pending until IPC completion.
+  let pendingNodeAction = null;
+  let nodeActionError = '';
+
+  const runNodeAction = async action => {
+    if (pendingNodeAction !== null) return;
+    pendingNodeAction = action;
+    nodeActionError = '';
+    try {
+      if (action === 'stop') {
+        await window.api.stopNode();
+      } else {
+        await window.api.restartNode();
+      }
+      resetStore();
+      if (action === 'stop') {
+        $appState.nodeRunning = false;
+        await goto("/");
+      }
+    } catch (error) {
+      nodeActionError = error instanceof Error ? error.message : String(error);
+    } finally {
+      pendingNodeAction = null;
+    }
   };
 
-  const restartNode = () => {
-    window.api.restartNode();
-    resetStore()
-  };
+  const stopNode = () => runNodeAction('stop');
+  const restartNode = () => runNodeAction('restart');
 
 
+  // 2026-10-05: display the poller's estimate without treating it as a deadline.
   let syncPercentage;
+  let syncTimeRemaining;
+  $:syncTimeRemaining = $syncRemainingMinutes === null ? null :
+    String(Math.floor($syncRemainingMinutes / 60)).padStart(2, '0') + ':' +
+    String($syncRemainingMinutes % 60).padStart(2, '0');
   $:syncPercentage = (($node.height / $node.network_height) * 100).toFixed(2);
 
 </script>
@@ -39,6 +61,9 @@
             <h3>Synced</h3>
           {/if}
         </div>
+        {#if $node.synced === false}
+          <p>Estimated remaining: {syncTimeRemaining === null ? 'Estimating...' : syncTimeRemaining}</p>
+        {/if}
       </div>
       <div class="col">
         <p>Connected to</p>
@@ -78,10 +103,19 @@
           </div>
         </div>
       {/if}
-      <button class="red" on:click={stopNode}>
+      {#if pendingNodeAction !== null}
+        <div class="row" role="status" aria-live="polite">
+          <Moon color="var(--title-color)" size="24" unit="px" />
+          <p>{pendingNodeAction === 'stop' ? 'Stopping node...' : 'Restarting node...'}</p>
+        </div>
+      {/if}
+      {#if nodeActionError}
+        <p class="row" role="alert">{nodeActionError}</p>
+      {/if}
+      <button class="red" on:click={stopNode} disabled={pendingNodeAction !== null}>
         <h3>Stop</h3>
       </button>
-      <button class="grey" on:click={restartNode}>
+      <button class="grey" on:click={restartNode} disabled={pendingNodeAction !== null}>
         <h3>Restart</h3>
       </button>
     </div>
