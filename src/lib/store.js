@@ -36,14 +36,67 @@ export const supply = writable({
 })
 
 
+// 2026-10-05: estimate sync duration from accepted local observations.
+export const syncRemainingMinutes = writable(null)
+
+let syncSample = null
+let infoRequest = 0
+let settledInfoRequest = 0
+
+function recordSyncSample(info, receivedAt) {
+    let remainingMinutes = null
+    const valid = info && info.synced === false &&
+        Number.isSafeInteger(info.height) && info.height >= 0 &&
+        Number.isSafeInteger(info.network_height) &&
+        info.network_height > info.height && Number.isFinite(receivedAt)
+    const sample = valid ? {
+        height: info.height,
+        networkHeight: info.network_height,
+        startTime: info.start_time,
+        receivedAt
+    } : null
+
+    if (sample && syncSample &&
+        sample.startTime === syncSample.startTime &&
+        sample.height > syncSample.height &&
+        sample.networkHeight >= syncSample.networkHeight &&
+        sample.receivedAt > syncSample.receivedAt) {
+        const minutes = Math.ceil(
+            (sample.networkHeight - sample.height) /
+            (sample.height - syncSample.height) *
+            ((sample.receivedAt - syncSample.receivedAt) / 60000)
+        )
+        if (Number.isSafeInteger(minutes) && minutes > 0) {
+            remainingMinutes = minutes
+        }
+    }
+
+    syncSample = sample
+    syncRemainingMinutes.set(remainingMinutes)
+}
+
 setInterval( async () => {
 
     //Fetch data from localhost
-    const res = await fetch('http://localhost:11898/getinfo')
-    if(res.ok) {
+    const request = ++infoRequest
+    try {
+        const res = await fetch('http://localhost:11898/getinfo')
+        if (!res.ok) throw new Error('Node info request failed')
         const json = await res.json()
-        node.set(json)
-    } else console.log('No data, node not running?')
+
+        if (request > settledInfoRequest) {
+            settledInfoRequest = request
+            recordSyncSample(json, performance.now())
+            node.set(json)
+        }
+    } catch (error) {
+        if (request > settledInfoRequest) {
+            settledInfoRequest = request
+            syncSample = null
+            syncRemainingMinutes.set(null)
+            console.log('No data, node not running?', error)
+        }
+    }
 
     //Fetch supply from node
     const currentSupply = await getSupply()

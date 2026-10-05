@@ -1,5 +1,5 @@
 <script>
-  import { appState, node, resetStore, supply } from "$lib/store.js";
+  import { appState, node, resetStore, supply, syncRemainingMinutes } from "$lib/store.js";
   import { goto } from "$app/navigation";
   import { fade } from "svelte/transition";
   import { Moon } from "svelte-loading-spinners";
@@ -17,7 +17,12 @@
   };
 
 
+  // 2026-10-05: display the poller's estimate without treating it as a deadline.
   let syncPercentage;
+  let syncTimeRemaining;
+  $:syncTimeRemaining = $syncRemainingMinutes === null ? null :
+    String(Math.floor($syncRemainingMinutes / 60)).padStart(2, '0') + ':' +
+    String($syncRemainingMinutes % 60).padStart(2, '0');
   $:syncPercentage = (($node.height / $node.network_height) * 100).toFixed(2);
 
 </script>
@@ -39,6 +44,9 @@
             <h3>Synced</h3>
           {/if}
         </div>
+        {#if $node.synced === false}
+          <p>Estimated remaining: {syncTimeRemaining === null ? 'Estimating...' : syncTimeRemaining}</p>
+        {/if}
       </div>
       <div class="col">
         <p>Connected to</p>
