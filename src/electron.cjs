@@ -89,6 +89,7 @@ function createMainWindow() {
 
 app.once('ready', createMainWindow);
 
+// 2026-10-05: skip Dock calls outside macOS.
 let tray
 app.whenReady().then(() => {
     console.log(appBin);
@@ -97,18 +98,17 @@ app.whenReady().then(() => {
         {
             label: 'Show', click: function () {
                 mainWindow.show()
-                app.dock.show()
+                if (process.platform === 'darwin') app.dock.show()
             }
         },
         {
             label: 'Hide', click: function () {
                 mainWindow.hide()
-                app.dock.hide()
+                if (process.platform === 'darwin') app.dock.hide()
             }
         },
         {
             label: 'Quit', click: function () {
-                stopNode()
                 app.quit()
             }
         },
@@ -131,7 +131,7 @@ app.on('window-all-closed', () => {
 });
 
 ipcMain.on('hide', () => {
-    app.dock.hide()
+    if (process.platform === 'darwin') app.dock.hide()
     mainWindow.hide()
 })
 
@@ -143,47 +143,103 @@ ipcMain.on('to-main', (event, count) => {
     return mainWindow.webContents.send('from-main', `next count is ${count + 1}`);
 })
 
-let kryptokrona
-let running = false
+// 2026-10-05: acknowledge this tracked child's close before stop/restart completes.
+let kryptokrona = null
+let nodeCommand = 0
+let quitRequested = false
+let quitReady = false
 
 ipcMain.on('startNode', () => {
-    startNode()
+    commandNode('start').catch(error => console.error('Could not start node', error))
 })
 
-ipcMain.on('stopNode', () => {
-    stopNode()
-})
+ipcMain.handle('stopNode', () => commandNode('stop'))
+ipcMain.handle('restartNode', () => commandNode('restart'))
 
-ipcMain.on('restartNode', () => {
-    restartNode()
+app.on('before-quit', event => {
+    if (quitReady) return
+    event.preventDefault()
+    if (quitRequested) return
+    quitRequested = true
+    ++nodeCommand
+    stopNode().then(() => {
+        quitReady = true
+        app.quit()
+    }).catch(error => {
+        quitRequested = false
+        console.error('Could not stop node before quitting', error)
+    })
 })
 
 const startNode = () => {
-    if(running === false) {
-        kryptokrona = spawn(appBin + 'kryptokrona --enable-cors=* --enable-blockexplorer --rpc-bind-ip=0.0.0.0 --rpc-bind-port=11898', {
-            shell: true,
-            detached: true
+    if (kryptokrona) return kryptokrona.ready
+
+    const child = spawn(path.join(appBin, 'kryptokrona'), [
+        '--enable-cors=*',
+        '--enable-blockexplorer',
+        '--rpc-bind-ip=0.0.0.0',
+        '--rpc-bind-port=11898'
+    ], {detached: true})
+    const record = {child, didClose: false, stopping: null}
+    record.closed = new Promise(resolve => {
+        child.once('close', (code, signal) => {
+            record.didClose = true
+            if (kryptokrona === record) kryptokrona = null
+            resolve({code, signal})
         })
+    })
+    record.ready = new Promise((resolve, reject) => {
+        child.once('spawn', () => resolve())
+        child.on('error', reject)
+    })
+    kryptokrona = record
+    return record.ready
+}
+
+const stopNode = async () => {
+    const record = kryptokrona
+    if (!record) return
+    if (record.stopping) return record.stopping
+
+    const stopping = (async () => {
+        try {
+            await record.ready
+        } catch (error) {
+            // A failed spawn still has a child lifecycle to finish.
+            await record.closed
+            return
+        }
+        if (!record.didClose) {
+            try {
+                process.kill(-record.child.pid, 'SIGINT')
+            } catch (error) {
+                // ESRCH alone is not a close acknowledgement.
+                if (error.code !== 'ESRCH') throw error
+            }
+        }
+        await record.closed
+    })()
+    record.stopping = stopping
+    try {
+        await stopping
+    } finally {
+        if (record.stopping === stopping) record.stopping = null
     }
-    console.log('Starting node')
-    running = true
 }
 
-const stopNode = () => {
-    console.log('Stopping node')
-    if(running === true) {
-        process.kill(-kryptokrona.pid, 'SIGINT')
-        running = false
+const commandNode = async action => {
+    if (quitRequested) throw new Error('Application is quitting')
+    const command = ++nodeCommand
+    if (action !== 'start' || (kryptokrona && kryptokrona.stopping)) {
+        await stopNode()
     }
+    if (command !== nodeCommand || quitRequested) {
+        throw new Error('Node command was superseded')
+    }
+    if (action === 'stop') return {status: 'closed'}
+    await startNode()
+    if (command !== nodeCommand || quitRequested) {
+        throw new Error('Node command was superseded')
+    }
+    return {status: 'spawned'}
 }
-
-const restartNode = () => {
-    console.log('Restarting node');
-    stopNode()
-    setTimeout(() => {
-        startNode()
-    }, 15000)
-}
-
-
-

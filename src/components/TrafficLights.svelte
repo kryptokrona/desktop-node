@@ -26,6 +26,8 @@
     cursor: pointer;
 
     div {
+      /* 2026-10-05: exclude window controls from the draggable title strip. */
+      -webkit-app-region: no-drag;
       width: 12px;
       height: 12px;
       border-radius: 50px;
